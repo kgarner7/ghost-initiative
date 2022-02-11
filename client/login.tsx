@@ -28,6 +28,23 @@ interface FormProps {
   username?: string;
 }
 
+// eslint-disable-next-line max-len
+// From https://stackoverflow.com/questions/901115/how-can-i-get-query-string-values-in-javascript#5158301
+function getParameterByName(name: string): string | null {
+  name = name.replace(/[\[\]]/g, "\\$&");
+  const regex = new RegExp(`[?&]${  name  }(=([^&#]*)|&|#|$)`),
+    results = regex.exec(location.search);
+
+  if (!results) return null;
+  if (!results[2]) return "";
+  return decodeURIComponent(results[2].replace(/\+/g, " "));
+}
+
+const defaults = {
+  name: getParameterByName("name"),
+  token: getParameterByName("token")
+};
+
 export class LoginPage extends PureComponent<LoginPageProps> {
   public constructor(props: LoginPageProps) {
     super(props);
@@ -45,6 +62,7 @@ export class LoginPage extends PureComponent<LoginPageProps> {
           <Form.Item
             label="Character name" name="username"
             rules={[{ required: true, message: "Please provide your character name" }]}
+            initialValue={defaults.name}
           >
             <Input placeholder="Your character's name (as it currently appears in Discord)"/>
           </Form.Item>
@@ -69,6 +87,7 @@ export class LoginPage extends PureComponent<LoginPageProps> {
           <Form.Item
             label="GM password" name="password"
             rules={[{ required: true, message: "Please provide your GM password" }]}
+            initialValue={defaults.token}
           >
             <Input.Password placeholder="Randomly generated string"/>
           </Form.Item>
