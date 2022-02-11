@@ -1,0 +1,73 @@
+{
+  "name": "ghost-initiative",
+  "version": "1.0.0",
+  "description": "Initiative tracker/randomizer for Mage",
+  "main": "out/backend/server/index.js",
+  "license": "MIT",
+  "author": "Kendall Garner <17521368+kgarner7@users.noreply.github.com>",
+  "prisma": {
+    "schema": "server/database/schema.prisma"
+  },
+  "browserslist": [
+    "last 2 versions",
+    "not IE 10"
+  ],
+  "scripts": {
+    "build:back": "tsc --project tsconfig.backend.json",
+    "build:front:prod": "webpack --progress --config webpack.prod.config.js",
+    "lint": "eslint --ext .ts,.tsx,.spec.ts .",
+    "start:dev": "nodemon out/backend/server/index.js",
+    "typecheck": "tsc --noEmit --noErrorTruncation --project tsconfig.backend.json && tsc --noEmit --noErrorTruncation --project tsconfig.frontend.json",
+    "watch:back": "tsc --project tsconfig.backend.json --watch"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^4.7.0",
+    "@popperjs/core": "^2.11.2",
+    "@prisma/client": "^3.9.1",
+    "antd": "^4.18.6",
+    "compression": "^1.7.4",
+    "cookie": "^0.4.2",
+    "cookie-parser": "^1.4.6",
+    "dotenv": "^16.0.0",
+    "express": "^4.17.2",
+    "immer": "^9.0.12",
+    "preact": "^10.6.5",
+    "react-dom": "^16.0.2",
+    "socket.io": "^4.4.1",
+    "socket.io-client": "^4.4.1"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.17.0",
+    "@babel/core": "^7.17.0",
+    "@babel/plugin-transform-react-jsx": "^7.16.7",
+    "@babel/preset-env": "^7.16.11",
+    "@babel/preset-typescript": "^7.16.7",
+    "@types/compression": "^1.7.2",
+    "@types/cookie-parser": "^1.4.2",
+    "@types/express": "^4.17.13",
+    "@types/react-dom": "^17.0.11",
+    "@types/webpack-hot-middleware": "^2.25.5",
+    "@typescript-eslint/eslint-plugin": "^5.10.2",
+    "@typescript-eslint/parser": "^5.10.2",
+    "babel-loader": "^8.2.3",
+    "babel-plugin-import": "^1.13.3",
+    "core-js": "^3.21.0",
+    "css-loader": "^6.6.0",
+    "eslint": "^8.8.0",
+    "eslint-plugin-import": "^2.25.4",
+    "eslint-plugin-react": "^7.28.0",
+    "eslint-plugin-unicorn": "^40.1.0",
+    "html-webpack-plugin": "^5.5.0",
+    "less": "^4.1.2",
+    "less-loader": "^10.2.0",
+    "node-static": "^0.7.11",
+    "nodemon": "^2.0.15",
+    "prisma": "^3.9.1",
+    "style-loader": "^3.3.1",
+    "typescript": "^4.5.5",
+    "webpack": "^5.68.0",
+    "webpack-cli": "^4.9.2",
+    "webpack-dev-middleware": "^5.3.1",
+    "webpack-hot-middleware": "^2.25.1"
+  }
+}

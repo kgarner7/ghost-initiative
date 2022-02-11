@@ -1,0 +1,7 @@
+{
+  "verbose": true,
+  "watch": ["out/backend"],
+  "ignore": ["*.spec.ts"],
+  "ext": "js,json",
+  "delay": "1000"
+}

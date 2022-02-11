@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Character" ADD COLUMN     "tiebreak" SMALLINT,
+ALTER COLUMN "dex" SET DEFAULT 1,
+ALTER COLUMN "wis" SET DEFAULT 1;
