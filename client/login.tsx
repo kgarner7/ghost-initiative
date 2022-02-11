@@ -53,7 +53,7 @@ export class LoginPage extends PureComponent<LoginPageProps> {
   }
 
   public render(): h.JSX.Element {
-    return <Tabs centered defaultActiveKey="player">
+    return <Tabs centered defaultActiveKey={defaults.token ? "gm": "player"}>
       <Tabs.TabPane key="player" tab="Player Login">
         <Form
           layout="horizontal" wrapperCol={FORM_WRAPPER} labelCol={FORM_LABEL}
