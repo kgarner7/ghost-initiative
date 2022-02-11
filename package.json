@@ -15,7 +15,9 @@
   "scripts": {
     "build:back": "tsc --project tsconfig.backend.json",
     "build:front:prod": "webpack --progress --config webpack.prod.config.js",
+    "heroku-postbuild": "yarn build:back && yarn build:front:prod",
     "lint": "eslint --ext .ts,.tsx,.spec.ts .",
+    "start": "node out/backend/server/index.js",
     "start:dev": "nodemon out/backend/server/index.js",
     "typecheck": "tsc --noEmit --noErrorTruncation --project tsconfig.backend.json && tsc --noEmit --noErrorTruncation --project tsconfig.frontend.json",
     "watch:back": "tsc --project tsconfig.backend.json --watch"
