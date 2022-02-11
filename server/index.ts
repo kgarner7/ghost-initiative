@@ -21,14 +21,17 @@ app.use(cookieParser());
 // compress data
 app.use(compression());
 
-// serve static files
-app.use(express.static("out/frontend", {
+const staticOps = {
   maxAge: "30d",
   setHeaders: (res: Response): void => {
     res.removeHeader("X-Powered-By");
     res.setHeader("server", "");
-  },
-}));
+  }
+};
+
+// serve static files
+app.use(express.static("out/frontend", staticOps));
+app.use(express.static("client/static", staticOps));
 
 export const server = new Server(app);
 
