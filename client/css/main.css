@@ -49,3 +49,11 @@ h2.header {
 h2.init {
   margin-top: 0.5em;
 }
+
+.nameEdit {
+  margin: 10px 0px;
+}
+
+.nameEdit span, .nameEdit input {
+  font-size: 17px;
+}

@@ -34,15 +34,17 @@ export interface CharacterCreate {
 
 // eslint-disable-next-line @typescript-eslint/no-type-alias
 export interface CharacterUpdate {
-  dex: number;
+  dex?: number;
+  name?: string;
   hidden?: boolean;
   roll?: number;
-  wis: number;
+  wis?: number;
 }
 
 export interface CharacterUpdateResult {
   dex?: number;
   hidden?: boolean;
+  name?: string;
   initiative: number | null;
   player: boolean;
   roll?: number | null;
@@ -379,12 +381,12 @@ export function socketListen(app: HTTPServer): Server {
     });
 
     // eslint-disable-next-line complexity
-    socket.on("update", async (name, data, cb) => {
-      const { dex, hidden, roll, wis } = data;
+    socket.on("update", async (oldName, data, cb) => {
+      const { dex, name, hidden, roll, wis } = data;
 
       try {
         if (!socket.data.admin) {
-          if (hidden !== undefined || roll !== undefined || name !== socket.data.name) {
+          if (hidden !== undefined || roll !== undefined || oldName !== socket.data.name) {
             cb("You must be a GM to change these permissions");
             return;
           }
@@ -398,23 +400,40 @@ export function socketListen(app: HTTPServer): Server {
           }
         }
 
-        if (typeof name !== "string") {
+        if (typeof oldName !== "string") {
           cb("Name must be a string");
           return;
-        } else if (typeof dex !== "number" || dex < 1 || dex > 5) {
-          cb("Dexterity must be between 1 and 5 (inclusive)");
-          return;
-        } else if (typeof wis !== "number" || wis < 1 || wis > 5) {
-          cb("Wits must be between 1 and 5 (inclusive)");
+        } else if (name !== undefined && typeof name !== "string") {
+          cb("updated name must be a string");
           return;
         }
 
-        const updateData: Prisma.CharacterUpdateManyMutationInput = {
-          dex, wis
-        };
+        const updateData: Prisma.CharacterUpdateManyMutationInput = {};
+
+        if (dex !== undefined) {
+          if (typeof dex !== "number" || dex < 1 || dex > 5) {
+            cb("Dexterity must be between 1 and 5 (inclusive)");
+            return;
+          } else {
+            updateData.dex = dex;
+          }
+        }
+
+        if (wis !== undefined) {
+          if (typeof wis !== "number" || wis < 1 || wis > 5) {
+            cb("Wits must be between 1 and 5 (inclusive)");
+            return;
+          } else {
+            updateData.wis = wis;
+          }
+        }
 
         if (hidden !== undefined) {
           updateData.hidden = hidden;
+        }
+
+        if (name) {
+          updateData.name = name;
         }
 
         if (roll !== undefined) {
@@ -422,38 +441,40 @@ export function socketListen(app: HTTPServer): Server {
         }
 
         const [
-          [hiddenOriginally, originalRoll, isPlayer],
+          [hiddenOriginally, originalRoll, isPlayer, originalDex, originalwits],
           fullOrder, visibleOrder
         ] = await updateAllStats(
           async transaction => {
             const original = await transaction.character.findUnique({
-              where: { name }
+              where: { name: oldName }
             });
 
             if (!original) {
-              throw new Error(`No character ${name} found`);
+              throw new Error(`No character ${oldName} found`);
+            } else if (original.player && updateData.name !== undefined && oldName !== socket.data.name) {
+              throw new Error("Only a player may rename themselves");
             }
 
             await transaction.character.updateMany({
-              data: updateData, where: { name }
+              data: updateData, where: { name: oldName }
             });
 
-            return [original.hidden, original.roll, original.player];
+            return [original.hidden, original.roll, original.player, original.dex, original.wis];
           });
 
         const newHidden = hidden ?? hiddenOriginally;
         const newRoll   = roll === undefined ? originalRoll : roll;
 
         const initiative = newRoll !== null ?
-          dex + newRoll + wis: null;
+          (dex ?? originalDex) + newRoll + (wis ?? originalwits): null;
 
-        io.to(GM_ROOM).emit("update", name, {
-          dex, hidden, initiative, player: isPlayer, roll: newRoll, wis
+        io.to(GM_ROOM).emit("update", oldName, {
+          dex, hidden, initiative, name, player: isPlayer, roll: newRoll, wis
         },fullOrder.map(char => char.name));
 
         if (!newHidden) {
           const result: CharacterUpdateResult = {
-            initiative, player: isPlayer
+            initiative, name, player: isPlayer
           };
 
           if (isPlayer) {
@@ -462,9 +483,13 @@ export function socketListen(app: HTTPServer): Server {
             result.wis  = wis;
           }
 
-          io.to(PLAYER_ROOM).emit("update", name, result, visibleOrder.map(char => char.name));
+          io.to(PLAYER_ROOM).emit("update", oldName, result, visibleOrder.map(char => char.name));
         } else if (hiddenOriginally === false) {
-          io.to(PLAYER_ROOM).emit("hide", name);
+          io.to(PLAYER_ROOM).emit("hide", oldName);
+        }
+
+        if (isPlayer && socket.data.name === oldName && name !== undefined && name !== oldName) {
+          socket.data.name = name;
         }
 
         cb();

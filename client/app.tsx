@@ -4,10 +4,10 @@ import produce from "immer";
 import { h, Component, Fragment } from "preact";
 import io from "socket.io-client";
 
-import type { CharacterUpdate, ClientSocket, SocketCharacter } from "../server/socket";
+import type { ClientSocket, SocketCharacter } from "../server/socket";
 
 import { Admin } from "./admin";
-import { LoginPage } from "./login";
+import { COOKIE_LIFETIME, LoginPage } from "./login";
 import { Profile } from "./profile";
 import { Tracker } from "./tracker";
 
@@ -80,8 +80,21 @@ export class App extends Component<{}, AppState> {
 
     socket.on("hide", name => {
       this.setState(state => produce(state, draft => {
-        draft.players.delete(name);
-        draft.order = draft.order?.filter(char => char !== name);
+        if (name === this.state.name) {
+          document.cookie = serialize("name", "", {
+            expires: new Date(0), maxAge: 0, sameSite: "strict"
+          });
+
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
+          message.error("Your character was deleted", 10);
+
+          draft.name    = undefined;
+          draft.order   = undefined;
+          draft.players.clear();
+        } else {
+          draft.players.delete(name);
+          draft.order = draft.order?.filter(char => char !== name);
+        }
       }));
     });
 
@@ -94,7 +107,8 @@ export class App extends Component<{}, AppState> {
             player.initiative = char.initiative;
             player.roll = char.roll;
           } else {
-            console.error(`No player ${player}`);
+            // eslint-disable-next-line @typescript-eslint/no-floating-promises
+            message.error(`No player ${player}`);
           }
 
           return char.name;
@@ -102,17 +116,33 @@ export class App extends Component<{}, AppState> {
       }));
     });
 
-    socket.on("update", (name,  character, order) => {
+    socket.on("update", (oldName, character, order) => {
       this.setState(state => produce(state, draft => {
-        const player = draft.players.get(name);
+        if (oldName === this.state.name &&
+          character.name !== undefined && character.name !== oldName) {
+          draft.name = character.name;
+
+          document.cookie = serialize("name", character.name, {
+            maxAge: COOKIE_LIFETIME, sameSite: "strict"
+          });
+        }
+
+        const player = draft.players.get(oldName);
 
         if (player) {
-          draft.players.set(name, {
+          const { name, ...rest } = character;
+
+          if (name !== undefined && name !== oldName) {
+            draft.players.delete(oldName);
+            oldName = name;
+          }
+
+          draft.players.set(oldName , {
             ...player,
-            ...character
+            ...rest
           });
         } else {
-          draft.players.set(name, {
+          draft.players.set(oldName, {
             ...character
           });
         }

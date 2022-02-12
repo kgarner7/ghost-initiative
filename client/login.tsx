@@ -1,12 +1,13 @@
-import { Typography, Form, Input, Checkbox, Button, Tabs } from "antd";
+import { Form, Input, Checkbox, Button, Tabs } from "antd";
 import { serialize } from "cookie";
 import { h } from "preact";
+// eslint-disable-next-line import/no-internal-modules
 import { PureComponent } from "preact/compat";
 
 import type { ClientSocket, SocketCharacter } from "../server/socket";
 
 // eslint-disable-next-line @typescript-eslint/no-magic-numbers
-const COOKIE_LIFETIME = 60 * 60 * 24 * 14;  // 2 weeks
+export const COOKIE_LIFETIME = 60 * 60 * 24 * 14;  // 2 weeks
 const FORM_WRAPPER = { lg: 21, md: 19, sm: 17 };
 const FORM_LABEL = { lg: 3, md: 5, sm: 7 };
 

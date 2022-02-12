@@ -1,8 +1,8 @@
 import {
-  CheckOutlined, CloseOutlined, EditOutlined
+  CheckOutlined, CloseOutlined, EditOutlined, UserOutlined
 } from "@ant-design/icons";
-import { Button, Card, Col, InputNumber, message, Row } from "antd";
-import { Fragment, h } from "preact";
+import { Button, Card, Col, Input, InputNumber, message, Row } from "antd";
+import { h } from "preact";
 // eslint-disable-next-line import/no-internal-modules
 import { PureComponent } from "preact/compat";
 
@@ -22,38 +22,52 @@ interface Changes {
 
 export interface ProfileState {
   changes?: Changes;
+  name?: string;
 }
 
 export class Profile extends PureComponent<ProfileProps, ProfileState> {
   public constructor(props: ProfileProps) {
     super(props);
 
-    this.state = {};
+    this.state = {  };
 
+    this.handleNewName = this.handleNewName.bind(this);
     this.saveEdit = this.saveEdit.bind(this);
     this.startEdit = this.startEdit.bind(this);
+    this.startNameChange = this.startNameChange.bind(this);
     this.stopEdit = this.stopEdit.bind(this);
   }
 
   public render(): h.JSX.Element {
-    const actions = this.state.changes ? [
-      <Button icon={<CheckOutlined />} key="cancel" onClick={this.saveEdit}
-        className="statButton"
-      >
-        Save your changes
-      </Button>,
-      <Button icon={<CloseOutlined />} key="cancel" onClick={this.stopEdit} danger
-        className="statButton"
-      >
-        Cancel your changes
-      </Button>
-    ]: [
-      <Button icon={<EditOutlined />} key="edit" onClick={this.startEdit}
-        className="statButton"
-      >
+    let actions: h.JSX.Element[];
+
+    if (this.state.changes || this.state.name !== undefined) {
+      actions = [
+        <Button icon={<CheckOutlined />} key="save"
+          onClick={this.state.changes ? this.saveEdit: this.handleNewName} className="statButton"
+        >
+          Save your changes
+        </Button>,
+        <Button icon={<CloseOutlined />} key="cancel" onClick={this.stopEdit} danger
+          className="statButton"
+        >
+                Cancel your changes
+        </Button>
+      ];
+    } else {
+      actions = [
+        <Button icon={<EditOutlined />} key="edit" onClick={this.startEdit}
+          className="statButton" type="primary"
+        >
         Edit your stats
-      </Button>
-    ];
+        </Button>,
+        <Button icon={<UserOutlined />} key="name" onClick={this.startNameChange}
+          className="statButton"
+        >
+        Change your name
+        </Button>
+      ];
+    }
 
     return <Card title={<h2 className="header">
       Stats for {this.props.name}!
@@ -96,6 +110,10 @@ export class Profile extends PureComponent<ProfileProps, ProfileState> {
           </Col>
         </Row></Col>}
       </Row>
+      {this.state.name !== undefined && <Row>
+        <Input addonBefore="New character name!" className="nameEdit"
+          onChange={(e): void => this.setState({ name: e.target.value })} />
+      </Row>}
     </Card>;
   }
 
@@ -108,6 +126,17 @@ export class Profile extends PureComponent<ProfileProps, ProfileState> {
         }
       }));
     };
+  }
+
+  private handleNewName(): void {
+    this.props.socket.emit("update", this.props.name, { name: this.state.name! }, error => {
+      if (error) {
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+        message.error(`Could not change your name: ${error}`);
+      } else {
+        this.setState({ name: undefined });
+      }
+    });
   }
 
   private saveEdit(): void {
@@ -145,7 +174,11 @@ export class Profile extends PureComponent<ProfileProps, ProfileState> {
     this.setState({ changes: {} });
   }
 
+  private startNameChange(): void {
+    this.setState({ name: "" });
+  }
+
   private stopEdit(): void {
-    this.setState({ changes: undefined });
+    this.setState({ changes: undefined, name: undefined });
   }
 }

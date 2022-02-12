@@ -3,7 +3,8 @@ import {
   Button, Card, Checkbox, Col, Form, Input, InputNumber, List, message, Modal, Row
 } from "antd";
 import produce from "immer";
-import { Fragment, h } from "preact";
+import { h } from "preact";
+// eslint-disable-next-line import/no-internal-modules
 import { PureComponent } from "preact/compat";
 
 import type { CharacterCreate, ClientSocket } from "../server/socket";
@@ -92,7 +93,7 @@ export class Admin extends PureComponent<AdminProps, AdminState> {
         </Col>
       </Row>
       { this.state.ids.length > 0 && <List
-        dataSource={this.state.ids} renderItem={id =>
+        dataSource={this.state.ids} renderItem={(id): h.JSX.Element =>
           <NewCharacter id={id} key={id} create={this.createNpc(id)} remove={this.removeNpc} />}/>}
     </Card>;
   }

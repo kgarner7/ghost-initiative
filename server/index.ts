@@ -5,8 +5,8 @@ import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import express, { Response } from "express";
 
-import { socketListen } from "./socket";
 import { client } from "./database";
+import { socketListen } from "./socket";
 
 dotenv.config();
 

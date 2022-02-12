@@ -1,6 +1,5 @@
 /* eslint-disable max-classes-per-file */
-import { Button, Col, Form, InputNumber, List, message, Modal, Row } from "antd";
-import Checkbox from "antd/lib/checkbox/Checkbox";
+import { Button, Checkbox, Col, Form, Input, InputNumber, List, message, Modal, Row } from "antd";
 import { Fragment, h } from "preact";
 // eslint-disable-next-line import/no-internal-modules
 import { PureComponent } from "preact/compat";
@@ -61,11 +60,16 @@ class Character extends PureComponent<CharacterProps, CharacterState> {
         >
           <InputNumber min={1} max={10}/>
         </Form.Item>
-        {!this.props.player && <Form.Item
-          name="hidden" valuePropName="checked" initialValue={this.props.hidden ?? false}
-        >
-          <Checkbox>Hidden</Checkbox>
-        </Form.Item>}
+        {!this.props.player && <Fragment>
+          <Form.Item name="name" label="New name" >
+            <Input placeholder="New character name" />
+          </Form.Item>
+          <Form.Item
+            name="hidden" valuePropName="checked" initialValue={this.props.hidden ?? false}
+          >
+            <Checkbox>Hidden</Checkbox>
+          </Form.Item>
+        </Fragment>}
         <Form.Item>
           <Button type="primary" htmlType="submit">Submit</Button>
         </Form.Item>
@@ -208,7 +212,7 @@ export class Tracker extends PureComponent<TrackerProps> {
       return { ...player, name };
     });
 
-    return <List bordered dataSource={data} renderItem={item =>
+    return <List bordered dataSource={data} renderItem={(item): h.JSX.Element =>
       (<Character admin={this.props.admin} me={item.name === this.props.name}
         socket={this.props.socket} {...item} />)}/>;
   }
