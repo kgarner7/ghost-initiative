@@ -33,8 +33,11 @@ li.character {
   padding: 0px 24px !important;
 }
 
-h2.header {
+h3.header {
+  line-height: 1;
   margin-bottom: 0px;
+  white-space: pre-line;
+  word-break: normal;
 }
 
 .character .allStats {
@@ -56,4 +59,13 @@ h2.init {
 
 .nameEdit span, .nameEdit input {
   font-size: 17px;
+}
+
+div.top {
+  margin-bottom: 10px;
+  padding: 0px;
+}
+
+.ant-page-header-heading {
+  padding: 12px 24px 0px 24px;
 }

@@ -27,22 +27,43 @@ interface AppState {
   admin: boolean;
   loading: boolean;
   name?: string;
+  names: string[];
   order?: string[];
   players: PlayerMap;
+  position?: string;
+  showProfile: boolean;
   socket: ClientSocket;
+}
+
+// eslint-disable-next-line max-len
+// ordinal adapted from https://stackoverflow.com/questions/13627308/add-st-nd-rd-and-th-ordinal-suffix-to-a-number
+function getPosition(order: string[], name: string): string {
+  const num = order.indexOf(name) + 1;
+
+  /* eslint-disable @typescript-eslint/no-magic-numbers */
+  const j = num % 10, k = num % 100;
+  if (j === 1 && k !== 11) {
+    return `${num}st`;
+  } else if (j === 2 && k !== 12) {
+    return `${num}nd`;
+  } else if (j === 3 && k !== 13) {
+    return `${num}rd`;
+  }
+  return `${num}th`;
+  /* eslint-enable @typescript-eslint/no-magic-numbers */
 }
 
 export class App extends Component<{}, AppState> {
   public constructor(props: {}) {
     super(props);
 
-
     const socket = io() as ClientSocket;
 
     const cookies = parse(document.cookie);
 
     this.state = {
-      admin: false, loading: cookies.name || cookies.password, players: new Map(), socket
+      admin: false, loading: cookies.name || cookies.password, name: cookies.name, names: [],
+      players: new Map(), showProfile: true, socket
     };
 
     socket.on("connect", () => {
@@ -73,8 +94,12 @@ export class App extends Component<{}, AppState> {
       this.setState(state => produce(state, draft => {
         const { name, ...rest } = character;
 
-        draft.players.set(name, rest);
         draft.order = order;
+        draft.players.set(name, rest);
+
+        if (state.name) {
+          draft.position = getPosition(order, state.name);
+        }
       }));
     });
 
@@ -95,10 +120,20 @@ export class App extends Component<{}, AppState> {
           draft.players.delete(name);
           draft.order = draft.order?.filter(char => char !== name);
         }
+
+        if (state.name) {
+          if (draft.order) {
+            draft.position = getPosition(draft.order, state.name);
+          } else {
+            draft.position = undefined;
+          }
+        }
       }));
     });
 
-    socket.on("roll",  order => {
+    socket.on("names", names => this.setState({ names }));
+
+    socket.on("roll", order => {
       this.setState(state => produce(state, draft => {
         draft.order = order.map(char => {
           const player = draft.players.get(char.name);
@@ -113,6 +148,10 @@ export class App extends Component<{}, AppState> {
 
           return char.name;
         });
+
+        if (state.name) {
+          draft.position = getPosition(draft.order, state.name);
+        }
       }));
     });
 
@@ -148,6 +187,10 @@ export class App extends Component<{}, AppState> {
         }
 
         draft.order = order;
+
+        if (state.name) {
+          draft.position = getPosition(order, state.name);
+        }
       }));
     });
 
@@ -155,18 +198,22 @@ export class App extends Component<{}, AppState> {
       this.setState({ admin: false, name: undefined });
     });
 
-    this.handleAuth   = this.handleAuth.bind(this);
-    this.handleLogout = this.handleLogout.bind(this);
+    this.handleAuth     = this.handleAuth.bind(this);
+    this.handleLogout   = this.handleLogout.bind(this);
+    this.handleRefresh  = this.handleRefresh.bind(this);
+    this.handleToggle   = this.handleToggle.bind(this);
   }
 
   public render(): h.JSX.Element {
     return <Fragment>
       {!this.state.name && !this.state.admin && !this.state.loading &&
-        <LoginPage socket={this.state.socket} handleAuth={this.handleAuth}/>}
+        <LoginPage
+          names={this.state.names} socket={this.state.socket} handleAuth={this.handleAuth}/>}
       {this.state.name && <Profile
-        socket={this.state.socket}
-        name={this.state.name}
-        handleLogout={this.handleLogout}
+        handleLogout={this.handleLogout} name={this.state.name}
+        order={this.state.position} refresh={this.handleRefresh}
+        socket={this.state.socket} toggleProfile={this.handleToggle}
+        visible={this.state.showProfile}
         // This type annotation is safe because we are guaranteed to
         // get full information for ourselves
         {...this.state.players.get(this.state.name)! as Omit<PlayerProfile, "name">}
@@ -186,7 +233,9 @@ export class App extends Component<{}, AppState> {
     }));
 
     if (charName !== undefined) {
-      this.setState({ name: charName, loading: false, order, players });
+      this.setState({
+        name: charName, loading: false, order, players, position: getPosition(order, charName)
+      });
     } else {
       this.setState({ admin: true, loading: false, order, players });
     }
@@ -209,5 +258,22 @@ export class App extends Component<{}, AppState> {
 
       this.setState({ admin: undefined, name: undefined, order: undefined, players: new Map() });
     });
+  }
+
+  private handleRefresh(): void {
+    if (this.state.name || this.state.admin) {
+      this.state.socket.emit("refresh", (error, characters, order) => {
+        if (error) {
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
+          message.error(`Could not refresh: ${error}`);
+        } else {
+          this.handleAuth(characters!, order!, this.state.name);
+        }
+      });
+    }
+  }
+
+  private handleToggle(): void {
+    this.setState(state => ({ showProfile: !state.showProfile }));
   }
 }

@@ -1,8 +1,9 @@
 import {
-  CheckOutlined, CloseOutlined, EditOutlined, UserOutlined
+  CheckOutlined, CloseOutlined, EditOutlined, LogoutOutlined,
+  MinusOutlined, PlusOutlined, SyncOutlined, UserOutlined
 } from "@ant-design/icons";
-import { Button, Card, Col, Input, InputNumber, message, Row } from "antd";
-import { h } from "preact";
+import { Button, Card, Col, Input, InputNumber, message, PageHeader, Row } from "antd";
+import { Fragment, h } from "preact";
 // eslint-disable-next-line import/no-internal-modules
 import { PureComponent } from "preact/compat";
 
@@ -11,8 +12,13 @@ import type { ClientSocket } from "../server/socket";
 import type { PlayerProfile } from "./app";
 
 export interface ProfileProps extends PlayerProfile {
+  order?: string;
   socket: ClientSocket;
+  visible: boolean;
+
   handleLogout: () => void;
+  refresh: () => void;
+  toggleProfile: () => void;
 }
 
 interface Changes {
@@ -51,7 +57,7 @@ export class Profile extends PureComponent<ProfileProps, ProfileState> {
         <Button icon={<CloseOutlined />} key="cancel" onClick={this.stopEdit} danger
           className="statButton"
         >
-                Cancel your changes
+          Cancel your changes
         </Button>
       ];
     } else {
@@ -69,52 +75,77 @@ export class Profile extends PureComponent<ProfileProps, ProfileState> {
       ];
     }
 
-    return <Card title={<h2 className="header">
-      Stats for {this.props.name}!
-    </h2>} actions={actions} extra={
-      <Button type="primary" onClick={this.props.handleLogout}>Log out</Button>
-    }>
-      <Row>
-        <Col flex={1} className="stat"><Row>
-          <Col flex={1}>
-            <div className="statContent">Dexterity: </div>
-          </Col>
-          <Col flex={1}>
-            { this.state.changes ?
-              <InputNumber
-                className="statContent" defaultValue={this.props.dex} min={1} max={5}
-                onChange={this.handleChange("dex")} />:
-              <div className="statContent">{this.props.dex}</div>
-            }
-          </Col>
-        </Row></Col>
-        <Col flex={1} className="stat"><Row>
-          <Col flex={1}>
-            <div className="statContent">Wits: </div>
-          </Col>
-          <Col flex={1}>
-            { this.state.changes ?
-              <InputNumber
-                className="statContent" defaultValue={this.props.wis} min={1} max={5}
-                onChange={this.handleChange("wis")} />:
-              <div className="statContent">{this.props.wis}</div>
-            }
-          </Col>
-        </Row></Col>
-        {this.props.roll && <Col flex={1} className="stat"><Row>
-          <Col flex={1}>
-            <div className="statContent">Initiative Roll: </div>
-          </Col>
-          <Col flex={1}>
-            <div className="statContent">{this.props.roll}</div>
-          </Col>
-        </Row></Col>}
-      </Row>
-      {this.state.name !== undefined && <Row>
-        <Input addonBefore="New character name!" className="nameEdit"
-          onChange={(e): void => this.setState({ name: e.target.value })} />
-      </Row>}
-    </Card>;
+    return <Fragment>
+      <PageHeader className="top"
+        title={<h3 className="header">Stats for {this.props.name}</h3>}
+        extra={
+          <Fragment>
+            <Button type="primary" onClick={this.props.handleLogout} icon={<LogoutOutlined/>}>
+            Log out
+            </Button>
+            <Button type="primary" onClick={this.props.refresh} icon={<SyncOutlined/>}>
+            Refresh
+            </Button>
+            <Button type="primary" onClick={this.props.toggleProfile}
+              icon={this.props.visible ? <MinusOutlined /> :<PlusOutlined/>}
+            >
+              {this.props.visible ? "Hide": "Show"} profile
+            </Button>
+          </Fragment>
+        }
+      >
+      </PageHeader>
+      <Card actions={actions} hidden={!this.props.visible}>
+        <Row>
+          <Col flex={1} className="stat"><Row>
+            <Col flex={1}>
+              <div className="statContent">Dexterity: </div>
+            </Col>
+            <Col flex={1}>
+              { this.state.changes ?
+                <InputNumber
+                  className="statContent" defaultValue={this.props.dex} min={1} max={5}
+                  onChange={this.handleChange("dex")} />:
+                <div className="statContent">{this.props.dex}</div>
+              }
+            </Col>
+          </Row></Col>
+          <Col flex={1} className="stat"><Row>
+            <Col flex={1}>
+              <div className="statContent">Wits: </div>
+            </Col>
+            <Col flex={1}>
+              { this.state.changes ?
+                <InputNumber
+                  className="statContent" defaultValue={this.props.wis} min={1} max={5}
+                  onChange={this.handleChange("wis")} />:
+                <div className="statContent">{this.props.wis}</div>
+              }
+            </Col>
+          </Row></Col>
+          {this.props.roll && <Col flex={1} className="stat"><Row>
+            <Col flex={1}>
+              <div className="statContent">Roll: </div>
+            </Col>
+            <Col flex={1}>
+              <div className="statContent">{this.props.roll}</div>
+            </Col>
+          </Row></Col>}
+          {this.props.order && <Col flex={1} className="stat"><Row>
+            <Col flex={1}>
+              <div className="statContent">Position: </div>
+            </Col>
+            <Col flex={1}>
+              <div className="statContent">{this.props.order}</div>
+            </Col>
+          </Row></Col>}
+        </Row>
+        {this.state.name !== undefined && <Row>
+          <Input addonBefore="New character name!" className="nameEdit"
+            onChange={(e): void => this.setState({ name: e.target.value })} />
+        </Row>}
+      </Card>
+    </Fragment>;
   }
 
   private handleChange(field: keyof Changes): (value: number) => void {

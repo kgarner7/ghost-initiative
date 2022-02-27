@@ -1,4 +1,4 @@
-import { Form, Input, Checkbox, Button, Tabs } from "antd";
+import { Form, Input, Checkbox, Button, Tabs, AutoComplete } from "antd";
 import { serialize } from "cookie";
 import { h } from "preact";
 // eslint-disable-next-line import/no-internal-modules
@@ -18,9 +18,14 @@ const WRAPPER_COL = {
 };
 
 interface LoginPageProps {
+  names: string[];
   socket: ClientSocket;
 
   handleAuth: (characters: SocketCharacter[], order: string[], name?: string) => void;
+}
+
+interface LoginFormState {
+  partialName: string;
 }
 
 interface FormProps {
@@ -46,14 +51,22 @@ const defaults = {
   token: getParameterByName("token")
 };
 
-export class LoginPage extends PureComponent<LoginPageProps> {
+export class LoginPage extends PureComponent<LoginPageProps, LoginFormState> {
   public constructor(props: LoginPageProps) {
     super(props);
 
+    this.state = { partialName: "" };
+
+    this.handleName = this.handleName.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
   }
 
+
   public render(): h.JSX.Element {
+    const autocompleteOptions = this.props.names
+      .filter(name => name.startsWith(this.state.partialName))
+      .map(value => ({ value }));
+
     return <Tabs centered defaultActiveKey={defaults.token ? "gm": "player"}>
       <Tabs.TabPane key="player" tab="Player Login">
         <Form
@@ -65,7 +78,9 @@ export class LoginPage extends PureComponent<LoginPageProps> {
             rules={[{ required: true, message: "Please provide your character name" }]}
             initialValue={defaults.name}
           >
-            <Input placeholder="Your character's name (as it currently appears in Discord)"/>
+            <AutoComplete
+              onChange={this.handleName} options={autocompleteOptions}
+              placeholder="Your character's name (as it currently appears in Discord)"/>
           </Form.Item>
 
           <Form.Item
@@ -105,6 +120,10 @@ export class LoginPage extends PureComponent<LoginPageProps> {
         </Form>
       </Tabs.TabPane>
     </Tabs>;
+  }
+
+  private handleName(partialName: string): void {
+    this.setState({ partialName });
   }
 
   private handleSubmit(values: FormProps): void {

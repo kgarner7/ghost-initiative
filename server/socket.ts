@@ -1,3 +1,4 @@
+import { randomInt } from "crypto";
 import { Server as HTTPServer } from "http";
 
 import { Character, Prisma, PrismaClient } from "@prisma/client";
@@ -5,6 +6,7 @@ import { Server } from "socket.io";
 import type { Socket } from "socket.io-client";
 
 import { client } from "./database";
+
 
 const GM_ROOM = "gm";
 const PLAYER_ROOM = "player";
@@ -65,6 +67,9 @@ export interface ClientToServer {
   ) => Promise<void>;
   create: (character: CharacterCreate, cb: ErrorCallback) => void;
   delete: (name: string, cb: ErrorCallback) => void;
+  refresh: (
+    cb: (error: string | undefined, characters?: SocketCharacter[], order?: string[]) => void
+  ) => Promise<void>;
   logout: (cb: ErrorCallback) => void;
   roll: (cb: ErrorCallback) => void;
   update: (name: string, data: CharacterUpdate, cb: ErrorCallback) => Promise<void>;
@@ -73,6 +78,7 @@ export interface ClientToServer {
 export interface ServerToClient {
   create: (character: SocketCharacter, order: string[]) => void;
   hide: (name: string) => void;
+  names: (names: string[]) => void;
   roll: (order: CharacterRoll[]) => void;
   update: (name: string, character: CharacterUpdateResult, order: string[]) => void;
 }
@@ -133,8 +139,10 @@ function orderCharacters(characters: Array<PartialBy<Character, "hidden">>, admi
   return [result, order];
 }
 
+// WARNING: This function calls randomInt synchronously. Don't do this in practice
 function shuffleArray<T>(arr: T[]): T[] {
-  return arr.sort(() => Math.random() - 0.5);
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers
+  return arr.sort(() => 0.5 - randomInt(0, 2));
 }
 
 // eslint-disable-next-line @typescript-eslint/no-type-alias
@@ -234,7 +242,18 @@ Promise<[T, Character[], Character[]]> {
 export function socketListen(app: HTTPServer): Server {
   const io = new Server<ClientToServer, ServerToClient, {}, SocketData>(app);
 
-  io.on("connection", socket => {
+  io.on("connection", async socket => {
+    {
+      const characters = await client.character.findMany({
+        select: { name: true },
+        where: {
+          player: true
+        }
+      });
+
+      socket.emit("names", characters.map(char => char.name));
+    }
+
     socket.on("authenticate", async (name, token, cb) => {
       const nameIsString = typeof name === "string";
       const tokenIsString = typeof token === "string";
@@ -356,6 +375,35 @@ export function socketListen(app: HTTPServer): Server {
       }
     });
 
+    socket.on("refresh", async cb => {
+      try {
+        if (!socket.data.admin && !socket.data.name) {
+          cb("You must be logged in as a player or GM");
+          return;
+        }
+
+        if (!socket.data.admin) {
+          const characters = await client.character.findMany({
+            select: {
+              dex: true, name: true, player: true, roll: true, tiebreak: true, wis: true
+            },
+            where: { hidden: false }
+          });
+
+          const [result, order] = orderCharacters(characters, false);
+          cb(undefined, result, order);
+
+        } else {
+          const characters = await client.character.findMany();
+          const [result, order] = orderCharacters(characters, true);
+
+          cb(undefined, result, order);
+        }
+      } catch (error) {
+        cb((error as Error).message);
+      }
+    });
+
     socket.on("roll", async cb => {
       if (!socket.data.admin) {
         cb("You must be a GM to force a reroll");
@@ -451,7 +499,8 @@ export function socketListen(app: HTTPServer): Server {
 
             if (!original) {
               throw new Error(`No character ${oldName} found`);
-            } else if (original.player && updateData.name !== undefined && oldName !== socket.data.name) {
+            } else if (original.player && updateData.name !== undefined &&
+              oldName !== socket.data.name) {
               throw new Error("Only a player may rename themselves");
             }
 
