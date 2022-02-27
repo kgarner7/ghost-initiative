@@ -246,6 +246,7 @@ export function socketListen(app: HTTPServer): Server {
     {
       const characters = await client.character.findMany({
         select: { name: true },
+        orderBy: { name: "asc" },
         where: {
           player: true
         }
