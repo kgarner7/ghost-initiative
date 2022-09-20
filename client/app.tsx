@@ -62,7 +62,7 @@ export class App extends Component<{}, AppState> {
     const cookies = parse(document.cookie);
 
     this.state = {
-      admin: false, loading: cookies.name || cookies.password, name: cookies.name, names: [],
+      admin: false, loading: !!(cookies.name || cookies.password), name: cookies.name, names: [],
       players: new Map(), showProfile: true, socket
     };
 

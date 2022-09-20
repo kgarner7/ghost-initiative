@@ -1,0 +1,26 @@
+FROM arm64v8/node:16-slim as builder
+WORKDIR /app
+
+RUN apt update && apt install -y openssl
+
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile
+COPY . .
+
+RUN yarn prisma generate && yarn build:back && yarn build:front:prod
+
+FROM arm64v8/node:16-slim
+WORKDIR /app
+
+RUN apt update && apt install -y openssl
+
+COPY --from=builder /app/out /app/out
+COPY package.json yarn.lock ./
+COPY server/database/schema.prisma server/database/schema.prisma
+
+
+RUN yarn install --prod=true  --frozen-lockfile && yarn prisma generate
+
+ENV PORT=8080
+
+CMD node out/backend/server/index.js

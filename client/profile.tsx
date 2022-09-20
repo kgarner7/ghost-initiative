@@ -148,12 +148,12 @@ export class Profile extends PureComponent<ProfileProps, ProfileState> {
     </Fragment>;
   }
 
-  private handleChange(field: keyof Changes): (value: number) => void {
-    return (value: number): void => {
+  private handleChange(field: keyof Changes): (value: number | null) => void {
+    return (value: number | null): void => {
       this.setState(state => ({
         changes: {
           ...state.changes,
-          [field]: value
+          [field]: value ?? undefined
         }
       }));
     };
